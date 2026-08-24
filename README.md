@@ -72,6 +72,9 @@ Entre elas estão:
 * `Certificate`
 * `Gross`
 * `No_of_Votes`
+* `Star3`
+* `Star4`
+
 
 `Series_Title` é utilizado apenas para identificar o filme, mas não participa do cálculo.
 
@@ -83,3 +86,5 @@ Entre elas estão:
 
 `Gross` e `No_of_Votes` também ficaram de fora porque representam principalmente informações comerciais e de popularidade, e não características do conteúdo do filme.
 
+Para rodar:
+`streamlit run interface.py`
