@@ -131,6 +131,7 @@ def encontrar_similares(titulo, quantidade=5):
             "Runtime": filme["Runtime"],
             "IMDB_Rating": filme["IMDB_Rating"],
             "Meta_score": filme["Meta_score"],
+            "Poster_Link": filme["Poster_Link"],
             "Similaridade": similaridade
         })
 
