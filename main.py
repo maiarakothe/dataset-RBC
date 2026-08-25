@@ -51,17 +51,9 @@ def similaridade_categorica(valor_a, valor_b):
 
 # Compara os gêneros usando Jaccard
 def similaridade_jaccard(generos_a, generos_b):
-    conjunto_a = {
-        g.strip().lower()
-        for g in generos_a.split(",")
-        if g.strip()
-    }
+    conjunto_a = {g.strip().lower() for g in generos_a.split(",") if g.strip()}
 
-    conjunto_b = {
-        g.strip().lower()
-        for g in generos_b.split(",")
-        if g.strip()
-    }
+    conjunto_b = {g.strip().lower() for g in generos_b.split(",") if g.strip()}
 
     if not conjunto_a or not conjunto_b:
         return None
@@ -83,7 +75,7 @@ def similaridade_filmes(filme_a, filme_b):
         ("Year_norm", similaridade_numerica, 1),
         ("Runtime_norm", similaridade_numerica, 1),
         ("Star1", similaridade_categorica, 2),
-        ("Star2", similaridade_categorica, 1)
+        ("Star2", similaridade_categorica, 1),
     ]
 
     # Calcula cada similaridade individual
@@ -121,63 +113,24 @@ def encontrar_similares(titulo, quantidade=5):
 
         similaridade = similaridade_filmes(filme_escolhido, filme)
 
-        resultados.append({
-            "Filme": filme["Series_Title"],
-            "Genre": filme["Genre"],
-            "Director": filme["Director"],
-            "Star1": filme["Star1"],
-            "Star2": filme["Star2"],
-            "Released_Year": filme["Released_Year"],
-            "Runtime": filme["Runtime"],
-            "IMDB_Rating": filme["IMDB_Rating"],
-            "Meta_score": filme["Meta_score"],
-            "Poster_Link": filme["Poster_Link"],
-            "Similaridade": similaridade
-        })
+        resultados.append(
+            {
+                "Filme": filme["Series_Title"],
+                "Genre": filme["Genre"],
+                "Director": filme["Director"],
+                "Star1": filme["Star1"],
+                "Star2": filme["Star2"],
+                "Released_Year": filme["Released_Year"],
+                "Runtime": filme["Runtime"],
+                "IMDB_Rating": filme["IMDB_Rating"],
+                "Meta_score": filme["Meta_score"],
+                "Poster_Link": filme["Poster_Link"],
+                "Similaridade": similaridade,
+            }
+        )
 
     # Organiza os filmes do mais parecido para o menos parecido
     resultados = pd.DataFrame(resultados)
     resultados = resultados.sort_values(by="Similaridade", ascending=False)
 
     return resultados.head(quantidade)
-
-
-# Aqui serve para teste para printar no terminal
-
-titulo = "The Dark Knight"
-
-resultado = encontrar_similares(titulo, quantidade=5)
-
-print("\nRBC - FILMES SIMILARES")
-print(f"\nFilme escolhido: {titulo}")
-
-filme_escolhido = df[df["Series_Title"] == titulo].iloc[0]
-
-print("\nDados do filme escolhido:")
-print(f"Gênero: {filme_escolhido['Genre']}")
-print(f"Diretor: {filme_escolhido['Director']}")
-print(f"Ator 1: {filme_escolhido['Star1']}")
-print(f"Ator 2: {filme_escolhido['Star2']}")
-print(f"Ano: {filme_escolhido['Released_Year']}")
-print(f"Duração: {filme_escolhido['Runtime']} min")
-print(f"IMDb: {filme_escolhido['IMDB_Rating']}")
-print(f"Meta Score: {filme_escolhido['Meta_score']}")
-
-print("\nFilmes encontrados:")
-
-# Mostra os filmes recuperados pelo RBC
-if not resultado.empty:
-    for posicao, (_, filme) in enumerate(resultado.iterrows(), start=1):
-        percentual = filme["Similaridade"] * 100
-
-        print(f"\n{posicao}. {filme['Filme']} - {percentual:.2f}%")
-        print(f"Gênero: {filme['Genre']}")
-        print(f"Diretor: {filme['Director']}")
-        print(f"Ator 1: {filme['Star1']}")
-        print(f"Ator 2: {filme['Star2']}")
-        print(f"Ano: {int(filme['Released_Year'])}")
-        print(f"Duração: {filme['Runtime']} min")
-        print(f"IMDb: {filme['IMDB_Rating']}")
-        print(f"Meta Score: {filme['Meta_score']}")
-else:
-    print("Nenhum filme similar encontrado.")
