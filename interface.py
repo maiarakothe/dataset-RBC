@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 
+# Importa funções do main
 from main import (
     df,
     encontrar_similares,
@@ -8,7 +9,7 @@ from main import (
     reter_caso
 )
 
-
+# Define as configurações da página
 st.set_page_config(
     page_title="RBC - Filmes Similares",
     page_icon="🎬",
@@ -16,9 +17,9 @@ st.set_page_config(
 )
 
 
-# =========================================================
+
 # SESSION STATE
-# =========================================================
+# Faz com que a página não tenha somente informações temporárias, permetindo a interação com o usuário
 
 if "resultado" not in st.session_state:
     st.session_state.resultado = pd.DataFrame()
@@ -33,9 +34,7 @@ if "avaliado" not in st.session_state:
     st.session_state.avaliado = False
 
 
-# =========================================================
 # TÍTULO
-# =========================================================
 
 st.title("🎬 RBC - Filmes Similares")
 
@@ -44,10 +43,7 @@ st.write(
     "Raciocínio Baseado em Casos."
 )
 
-
-# =========================================================
 # SELEÇÃO DO FILME
-# =========================================================
 
 filmes = sorted(
     df["Series_Title"]
@@ -69,10 +65,7 @@ quantidade = st.slider(
 )
 
 
-# =========================================================
 # 1. RECUPERAÇÃO
-# =========================================================
-
 if st.button(
     "🔎 Encontrar filmes similares",
     use_container_width=True
@@ -95,10 +88,7 @@ if st.button(
 resultado = st.session_state.resultado
 
 
-# =========================================================
 # MOSTRAR RESULTADOS
-# =========================================================
-
 if not resultado.empty:
 
     filme = df[
@@ -107,17 +97,14 @@ if not resultado.empty:
     ].iloc[0]
 
 
-    # =====================================================
     # FILME ESCOLHIDO
-    # =====================================================
-
     st.subheader("🎬 Filme escolhido")
 
     col1, col2 = st.columns([1, 2])
 
 
     with col1:
-
+        # Carrega o poster do filme
         poster = filme.get(
             "Poster_Link",
             ""
@@ -130,7 +117,7 @@ if not resultado.empty:
                 width=250
             )
 
-
+    # Define a tabela com as informações do filme
     with col2:
 
         st.markdown(
@@ -183,10 +170,8 @@ if not resultado.empty:
             )
 
 
-    # =====================================================
     # 2. REUTILIZAÇÃO
-    # =====================================================
-
+    # Usa as informações recuperadas do DataSet e recomenda o filme mais similar de forma separada.
     if st.session_state.recomendacao is None:
 
         st.session_state.recomendacao = (
@@ -224,15 +209,13 @@ if not resultado.empty:
     )
 
 
-    # =====================================================
     # 3. REVISÃO
-    # =====================================================
-
+    # Com base na recomendação feita pelo sistema, o usuário indica se achou adequada ou não.
     st.subheader(
         "📝 Revisão da recomendação"
     )
 
-
+    # Constroi a sessão que permite o usuário interragir.
     avaliacao = st.radio(
         "Você gostou dessa recomendação?",
         ["👍 Sim", "👎 Não"],
@@ -247,10 +230,10 @@ if not resultado.empty:
 
         if not st.session_state.avaliado:
 
-            # =============================================
             # 4. RETENÇÃO
-            # =============================================
-
+            # Utiliza a opinião do usuário sobre a recomendação similar.
+            # As informações sobre a recomendação feita, sobre o filme e sobre a opinião do usuário
+            # são salvas em uma pasta "casos_rbc_csv" 
             if avaliacao == "👍 Sim":
 
                 reter_caso(
@@ -262,6 +245,7 @@ if not resultado.empty:
 
                 st.session_state.avaliado = True
 
+                # Retorna o feedback da avaliação feita
                 st.success(
                     "✅ Avaliação registrada! "
                     "O caso foi armazenado "
@@ -280,6 +264,7 @@ if not resultado.empty:
 
                 st.session_state.avaliado = True
 
+                # Retorna o feedback da avaliação feita
                 st.warning(
                     "⚠️ Avaliação registrada como "
                     "negativa. O caso foi armazenado "
@@ -294,31 +279,33 @@ if not resultado.empty:
             )
 
 
-    # =====================================================
     # FILMES SIMILARES
-    # =====================================================
-
     st.divider()
 
     st.subheader(
         "🍿 Filmes similares"
     )
 
-
+    # Numera cada filme começando do 1.
     for posicao, (_, filme) in enumerate(
         resultado.iterrows(),
         start=1
     ):
-
+        # Mostra o percentual sem levar em consideração a avaliação do usuário.
         percentual = (
             filme["Similaridade"] * 100
         )
 
+        # Mostra o percentual levando em consideração a avaliação do usuário.
+        score_rbc = (
+            filme["Score_RBC"] * 100
+        )
 
         with st.container(
             border=True
         ):
 
+            # Configurações do pôster dos filmes similares
             col_poster, col_info, col_score = (
                 st.columns([1, 4, 1])
             )
@@ -341,7 +328,7 @@ if not resultado.empty:
                         width=200
                     )
 
-
+            # Carrega informações dos filmes similares
             with col_info:
 
                 st.markdown(
@@ -400,12 +387,17 @@ if not resultado.empty:
                         "Não disponível"
                     )
 
-
+            # Exibe e Formata o percentual de similaridade dos filmes com o filme principal.
             with col_score:
 
                 st.metric(
                     "Similaridade",
                     f"{percentual:.2f}%"
+                )
+
+                st.metric(
+                    "Score RBC",
+                    f"{score_rbc:.2f}%"
                 )
 
 

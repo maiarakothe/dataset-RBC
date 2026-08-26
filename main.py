@@ -1,9 +1,11 @@
+from pandas.errors import EmptyDataError
 import pandas as pd
 import numpy as np
 
+# Lê o DataSet
 df = pd.read_csv("imdb_top_1000.csv")
 
-
+# Melhora a resolução da imagem dos pôsters carregados
 def melhorar_poster(url):
     if pd.isna(url) or not str(url).strip():
         return url
@@ -141,9 +143,72 @@ def encontrar_similares(titulo, quantidade=5):
 
     # Organiza os filmes do mais parecido para o menos parecido
     resultados = pd.DataFrame(resultados)
-    resultados = resultados.sort_values(by="Similaridade", ascending=False)
+    resultados = resultados.sort_values(
+        by="Similaridade",
+        ascending=False
+    )
+
+    resultados = aplicar_experiencias_retentidas(
+        titulo,
+        resultados
+    )
 
     return resultados.head(quantidade)
+
+# Aplica as avaliações do usuário (caso exista)
+def aplicar_experiencias_retentidas(
+    titulo,
+    resultados
+):
+    casos = carregar_casos_retidos()
+
+    # Se não têm nenhuma avaliação sobre o filme naquele caso, mostra a similaridade original.
+    if casos.empty:
+        resultados["Score_RBC"] = resultados["Similaridade"]
+        return resultados
+
+    # Copia os resultados para não modificar nada no DataSet original.
+    resultados = resultados.copy()
+
+
+    # Ganha a similaridade original. Caso tenha alguma avaliação no caso
+    # a similaridade do "Score_RBC" aumenta 2% (casos positivos) ou
+    # diminuí 2% (casos negativos).
+    resultados["Score_RBC"] = resultados["Similaridade"]
+
+    casos_filme = casos[
+        casos["Filme_Pesquisado"] == titulo
+    ]
+
+    for _, caso in casos_filme.iterrows():
+
+        filme = caso["Filme_Recomendado"]
+
+        if caso["Avaliacao"] == "positiva":
+
+            resultados.loc[
+                resultados["Filme"] == filme,
+                "Score_RBC"
+            ] += 0.02
+
+        elif caso["Avaliacao"] == "negativa":
+
+            resultados.loc[
+                resultados["Filme"] == filme,
+                "Score_RBC"
+            ] -= 0.02
+
+    # Mantém o Score_RBC entre 0 e 1
+    resultados["Score_RBC"] = (
+        resultados["Score_RBC"].clip(0, 1)
+    )
+
+    # Ordena os valores
+    return resultados.sort_values(
+        by="Score_RBC",
+        ascending=False
+    )
+
 
 def reutilizar(resultados):
     """
@@ -157,6 +222,7 @@ def reutilizar(resultados):
 
     return resultados.iloc[0]
 
+# Armazena a recomendação do usuário no arquivo "casos_rbc_csv".
 def reter_caso(
     filme_pesquisado,
     filme_recomendado,
@@ -173,7 +239,10 @@ def reter_caso(
     arquivo = "casos_rbc.csv"
 
     try:
+        # Tenta carregar casos já armazenados.
         casos = pd.read_csv(arquivo)
+
+        # Adiciona um novo caso ao existentes.
         casos = pd.concat(
             [casos, novo_caso],
             ignore_index=True
@@ -181,6 +250,39 @@ def reter_caso(
     except FileNotFoundError:
         casos = novo_caso
 
+    # Cria o arquivo se ele não existir.
     casos.to_csv(arquivo, index=False)
 
     return True
+
+# Trata o erro caso o arquivo exista mas esta vazio.
+from pandas.errors import EmptyDataError
+
+
+# Carrega os casos anteriores.
+def carregar_casos_retidos():
+
+    arquivo = "casos_rbc.csv"
+
+    # Define as colunas esperadas.
+    colunas = [
+        "Filme_Pesquisado",
+        "Filme_Recomendado",
+        "Similaridade",
+        "Avaliacao"
+    ]
+
+    try:
+
+        casos = pd.read_csv(arquivo)
+
+        # Verifica se o arquivo possui as colunas esperadas
+        if not all(coluna in casos.columns for coluna in colunas):
+            return pd.DataFrame(columns=colunas)
+
+        return casos
+
+    # Se o arquivo nao existir ou estiver vazio, retorna colunas vazias.
+    except (FileNotFoundError, EmptyDataError):
+
+        return pd.DataFrame(columns=colunas)
