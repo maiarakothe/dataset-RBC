@@ -134,3 +134,43 @@ def encontrar_similares(titulo, quantidade=5):
     resultados = resultados.sort_values(by="Similaridade", ascending=False)
 
     return resultados.head(quantidade)
+
+def reutilizar(resultados):
+    """
+    REUTILIZAÇÃO:
+    Utiliza o caso mais semelhante recuperado
+    para gerar uma recomendação.
+    """
+
+    if resultados.empty:
+        return None
+
+    return resultados.iloc[0]
+
+def reter_caso(
+    filme_pesquisado,
+    filme_recomendado,
+    similaridade,
+    avaliacao
+):
+    novo_caso = pd.DataFrame([{
+        "Filme_Pesquisado": filme_pesquisado,
+        "Filme_Recomendado": filme_recomendado,
+        "Similaridade": similaridade,
+        "Avaliacao": avaliacao
+    }])
+
+    arquivo = "casos_rbc.csv"
+
+    try:
+        casos = pd.read_csv(arquivo)
+        casos = pd.concat(
+            [casos, novo_caso],
+            ignore_index=True
+        )
+    except FileNotFoundError:
+        casos = novo_caso
+
+    casos.to_csv(arquivo, index=False)
+
+    return True
