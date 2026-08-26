@@ -3,8 +3,18 @@ import numpy as np
 
 df = pd.read_csv("imdb_top_1000.csv")
 
-print(f"Filmes carregados: {len(df)}")
-print(f"Colunas: {len(df.columns)}")
+
+def melhorar_poster(url):
+    if pd.isna(url) or not str(url).strip():
+        return url
+    url = str(url)
+    if "._V1_" in url:
+        url = url.split("._V1_")[0]
+        return url + "._V1_UX300_CR0,0,300,440_AL_.jpg"
+    return url
+
+
+df["Poster_Link"] = df["Poster_Link"].apply(melhorar_poster)
 
 # Converte o ano para número
 df["Released_Year"] = pd.to_numeric(df["Released_Year"], errors="coerce")
