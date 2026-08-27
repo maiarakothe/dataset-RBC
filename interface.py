@@ -171,7 +171,10 @@ if not resultado.empty:
                 "🎯 **Meta Score:** "
                 "Não disponível"
             )
-
+            
+        st.write(
+            f"📖 **Sinopse:** {filme['Overview']}"
+        )
 
     # 2. REUTILIZAÇÃO
     # Usa as informações recuperadas do DataSet e recomenda o filme mais similar de forma separada.
@@ -394,6 +397,10 @@ if not resultado.empty:
                         "🎯 **Meta Score:** "
                         "Não disponível"
                     )
+
+                st.write(
+                    f"📖 **Sinopse:** {filme['Overview']}"
+                )
 
             # Exibe e Formata o percentual de similaridade dos filmes com o filme principal.
             with col_score:

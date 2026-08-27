@@ -1,3 +1,5 @@
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from pandas.errors import EmptyDataError
 import pandas as pd
 import numpy as np
@@ -25,7 +27,7 @@ df["Released_Year"] = pd.to_numeric(df["Released_Year"], errors="coerce")
 df["Runtime"] = df["Runtime"].str.replace(" min", "", regex=False).astype(float)
 
 # Preenche valores vazios nas colunas de texto
-colunas_texto = ["Genre", "Director", "Star1", "Star2"]
+colunas_texto = ["Genre", "Director", "Star1", "Star2", "Overview"]
 
 # Converte a classificação indicativa para uma faixa etária aproximada.
 def normalizar_certificate(certificate):
@@ -77,9 +79,18 @@ df["Certificate_norm"] = df["Certificate"].apply(
     normalizar_certificate
 ) 
 
+# Tira os espaços em branco dos textos
 for coluna in colunas_texto:
     df[coluna] = df[coluna].fillna("").astype(str).str.strip()
 
+# Cria uma representação numérica dos textos dos filmes.
+vectorizer = TfidfVectorizer(
+    stop_words="english"
+)
+
+overview_tfidf = vectorizer.fit_transform(
+    df["Overview"]
+)
 
 # Normaliza os valores entre 0 e 1
 def normalizar_01(serie):
@@ -93,6 +104,20 @@ df["Year_norm"] = normalizar_01(df["Released_Year"])
 df["Runtime_norm"] = normalizar_01(df["Runtime"])
 df["IMDB_norm"] = normalizar_01(df["IMDB_Rating"])
 df["Meta_norm"] = normalizar_01(df["Meta_score"])
+
+def similaridade_overview(indice_a, indice_b):
+    """
+    Calcula a similaridade entre os Overviews
+    de dois filmes utilizando similaridade do cosseno.
+    """
+
+    vetor_a = overview_tfidf[indice_a]
+    vetor_b = overview_tfidf[indice_b]
+
+    return cosine_similarity(
+        vetor_a,
+        vetor_b
+    )[0][0]
 
 
 # Calcula a similaridade entre dois valores numéricos
@@ -124,11 +149,16 @@ def similaridade_jaccard(generos_a, generos_b):
 
 
 # Calcula a similaridade entre dois filmes
-def similaridade_filmes(filme_a, filme_b):
+def similaridade_filmes(
+    filme_a,
+    filme_b,
+    indice_a,
+    indice_b
+):
+
     similaridades = []
     pesos = []
 
-    # Define os atributos usados e seus pesos
     atributos = [
         ("Genre", similaridade_jaccard, 3),
         ("Director", similaridade_categorica, 2),
@@ -141,21 +171,36 @@ def similaridade_filmes(filme_a, filme_b):
         ("Star2", similaridade_categorica, 1),
     ]
 
-    # Calcula cada similaridade individual
+    # Compara os atributos tradicionais
     for atributo, funcao, peso in atributos:
-        sim = funcao(filme_a[atributo], filme_b[atributo])
+
+        sim = funcao(
+            filme_a[atributo],
+            filme_b[atributo]
+        )
 
         if sim is not None:
             similaridades.append(sim)
             pesos.append(peso)
 
-    # Retorna zero caso não exista nenhum atributo válido
+    # Compara o conteúdo das sinopses
+    sim_overview = similaridade_overview(
+        indice_a,
+        indice_b
+    )
+
+    similaridades.append(sim_overview)
+
+    # Peso da sinopse
+    pesos.append(3)
+
     if not similaridades:
         return 0.0
 
-    # Calcula a média ponderada das similaridades
-    return np.average(similaridades, weights=pesos)
-
+    return np.average(
+        similaridades,
+        weights=pesos
+    )
 
 # Encontra os filmes mais parecidos com o escolhido
 def encontrar_similares(titulo, quantidade=5):
@@ -169,12 +214,22 @@ def encontrar_similares(titulo, quantidade=5):
     filme_escolhido = filme_escolhido.iloc[0]
     resultados = []
 
+    indice_escolhido = df[
+        df["Series_Title"] == titulo
+    ].index[0]
+
     # Compara o filme escolhido com todos os outros
-    for _, filme in df.iterrows():
+    for indice, filme in df.iterrows():
+
         if filme["Series_Title"] == titulo:
             continue
 
-        similaridade = similaridade_filmes(filme_escolhido, filme)
+        similaridade = similaridade_filmes(
+            filme_escolhido,
+            filme,
+            indice_escolhido,
+            indice
+        )
 
         resultados.append(
             {
@@ -184,6 +239,7 @@ def encontrar_similares(titulo, quantidade=5):
                 "Star1": filme["Star1"],
                 "Star2": filme["Star2"],
                 "Certificate": filme["Certificate"],
+                "Overview": filme["Overview"],
                 "Released_Year": filme["Released_Year"],
                 "Runtime": filme["Runtime"],
                 "IMDB_Rating": filme["IMDB_Rating"],
