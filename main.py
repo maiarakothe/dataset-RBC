@@ -27,6 +27,64 @@ df["Runtime"] = df["Runtime"].str.replace(" min", "", regex=False).astype(float)
 # Preenche valores vazios nas colunas de texto
 colunas_texto = ["Genre", "Director", "Star1", "Star2"]
 
+def normalizar_certificate(certificate):
+
+    if pd.isna(certificate):
+        return np.nan
+
+    certificate = str(certificate).strip().upper()
+
+    classificacoes = {
+
+        # Livre
+        "U": 0,
+        "G": 0,
+
+        # Orientação parental
+        "PG": 10,
+        "GP": 10,
+
+        # Aproximadamente 13+
+        "PG-13": 13,
+        "UA": 13,
+        "U/A": 13,
+
+        # 14+
+        "TV-14": 14,
+
+        # 16+
+        "16": 16,
+
+        # Adulto
+        "R": 18,
+        "A": 18,
+        "TV-MA": 18,
+
+        # Classificações antigas
+        "APPROVED": 0,
+        "PASSED": 0,
+
+        # Sem classificação
+        "UNRATED": np.nan
+    }
+
+    idade = classificacoes.get(certificate, np.nan)
+
+    if pd.isna(idade):
+        return np.nan
+
+    return idade / 18
+
+def similaridade_numerica(valor_a, valor_b):
+    if pd.isna(valor_a) or pd.isna(valor_b):
+        return None
+
+    return 1 - abs(valor_a - valor_b)
+
+df["Certificate_norm"] = df["Certificate"].apply(
+    normalizar_certificate
+)
+
 for coluna in colunas_texto:
     df[coluna] = df[coluna].fillna("").astype(str).str.strip()
 
@@ -86,6 +144,7 @@ def similaridade_filmes(filme_a, filme_b):
         ("Meta_norm", similaridade_numerica, 1),
         ("Year_norm", similaridade_numerica, 1),
         ("Runtime_norm", similaridade_numerica, 1),
+        ("Certificate_norm", similaridade_numerica, 2),
         ("Star1", similaridade_categorica, 2),
         ("Star2", similaridade_categorica, 1),
     ]
@@ -132,6 +191,7 @@ def encontrar_similares(titulo, quantidade=5):
                 "Director": filme["Director"],
                 "Star1": filme["Star1"],
                 "Star2": filme["Star2"],
+                "Certificate": filme["Certificate"],
                 "Released_Year": filme["Released_Year"],
                 "Runtime": filme["Runtime"],
                 "IMDB_Rating": filme["IMDB_Rating"],
@@ -286,3 +346,4 @@ def carregar_casos_retidos():
     except (FileNotFoundError, EmptyDataError):
 
         return pd.DataFrame(columns=colunas)
+

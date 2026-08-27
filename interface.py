@@ -141,6 +141,9 @@ if not resultado.empty:
         )
 
         st.write(
+            f"🔞 **Classificação:** {filme['Certificate']}")
+
+        st.write(
             f"📅 **Ano:** "
             f"{int(filme['Released_Year'])}"
         )
@@ -354,6 +357,11 @@ if not resultado.empty:
                 st.write(
                     f"👤 **Ator 2:** "
                     f"{filme['Star2']}"
+                )
+
+                st.write(
+                    f"🔞 **Classificação:** "
+                    f"{filme['Certificate']}"
                 )
 
                 st.write(
