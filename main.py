@@ -27,62 +27,60 @@ df["Runtime"] = df["Runtime"].str.replace(" min", "", regex=False).astype(float)
 # Preenche valores vazios nas colunas de texto
 colunas_texto = ["Genre", "Director", "Star1", "Star2"]
 
+# Converte a classificação indicativa para uma faixa etária aproximada.
 def normalizar_certificate(certificate):
 
+    # Caso não exista classificação
     if pd.isna(certificate):
         return np.nan
 
+    # Padroniza o texto
     certificate = str(certificate).strip().upper()
 
+    # Mapeia as classificações para uma idade aproximada.
     classificacoes = {
-
-        # Livre
         "U": 0,
         "G": 0,
 
-        # Orientação parental
         "PG": 10,
         "GP": 10,
 
-        # Aproximadamente 13+
         "PG-13": 13,
         "UA": 13,
         "U/A": 13,
 
-        # 14+
         "TV-14": 14,
 
-        # 16+
         "16": 16,
 
-        # Adulto
         "R": 18,
         "A": 18,
         "TV-MA": 18,
 
-        # Classificações antigas
         "APPROVED": 0,
         "PASSED": 0,
 
-        # Sem classificação
         "UNRATED": np.nan
     }
 
     idade = classificacoes.get(certificate, np.nan)
 
+    # Converte a idade para uma escala de 0 a 1.
     if pd.isna(idade):
         return np.nan
 
     return idade / 18
 
-def similaridade_numerica(valor_a, valor_b):
-    if pd.isna(valor_a) or pd.isna(valor_b):
-        return None
 
-    return 1 - abs(valor_a - valor_b)
-
+# Cria a coluna que será utilizada pelo RBC.
 df["Certificate_norm"] = df["Certificate"].apply(
     normalizar_certificate
+) 
+print("\n===== CERTIFICATE =====")
+print(
+    df[
+        ["Certificate", "Certificate_norm"]
+    ].head(20)
 )
 
 for coluna in colunas_texto:
