@@ -76,12 +76,6 @@ def normalizar_certificate(certificate):
 df["Certificate_norm"] = df["Certificate"].apply(
     normalizar_certificate
 ) 
-print("\n===== CERTIFICATE =====")
-print(
-    df[
-        ["Certificate", "Certificate_norm"]
-    ].head(20)
-)
 
 for coluna in colunas_texto:
     df[coluna] = df[coluna].fillna("").astype(str).str.strip()
