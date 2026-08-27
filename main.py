@@ -7,6 +7,7 @@ import numpy as np
 # Lê o DataSet
 df = pd.read_csv("imdb_top_1000.csv")
 
+
 # Melhora a resolução da imagem dos pôsters carregados
 def melhorar_poster(url):
     if pd.isna(url) or not str(url).strip():
@@ -29,6 +30,7 @@ df["Runtime"] = df["Runtime"].str.replace(" min", "", regex=False).astype(float)
 # Preenche valores vazios nas colunas de texto
 colunas_texto = ["Genre", "Director", "Star1", "Star2", "Overview"]
 
+
 # Converte a classificação indicativa para uma faixa etária aproximada.
 def normalizar_certificate(certificate):
 
@@ -43,26 +45,19 @@ def normalizar_certificate(certificate):
     classificacoes = {
         "U": 0,
         "G": 0,
-
         "PG": 10,
         "GP": 10,
-
         "PG-13": 13,
         "UA": 13,
         "U/A": 13,
-
         "TV-14": 14,
-
         "16": 16,
-
         "R": 18,
         "A": 18,
         "TV-MA": 18,
-
         "APPROVED": 0,
         "PASSED": 0,
-
-        "UNRATED": np.nan
+        "UNRATED": np.nan,
     }
 
     idade = classificacoes.get(certificate, np.nan)
@@ -75,22 +70,17 @@ def normalizar_certificate(certificate):
 
 
 # Cria a coluna que será utilizada pelo RBC.
-df["Certificate_norm"] = df["Certificate"].apply(
-    normalizar_certificate
-) 
+df["Certificate_norm"] = df["Certificate"].apply(normalizar_certificate)
 
 # Tira os espaços em branco dos textos
 for coluna in colunas_texto:
     df[coluna] = df[coluna].fillna("").astype(str).str.strip()
 
 # Cria uma representação numérica dos textos dos filmes.
-vectorizer = TfidfVectorizer(
-    stop_words="english"
-)
+vectorizer = TfidfVectorizer(stop_words="english")
 
-overview_tfidf = vectorizer.fit_transform(
-    df["Overview"]
-)
+overview_tfidf = vectorizer.fit_transform(df["Overview"])
+
 
 # Normaliza os valores entre 0 e 1
 def normalizar_01(serie):
@@ -102,8 +92,7 @@ def normalizar_01(serie):
 # Normaliza os atributos numéricos
 df["Year_norm"] = normalizar_01(df["Released_Year"])
 df["Runtime_norm"] = normalizar_01(df["Runtime"])
-df["IMDB_norm"] = normalizar_01(df["IMDB_Rating"])
-df["Meta_norm"] = normalizar_01(df["Meta_score"])
+
 
 def similaridade_overview(indice_a, indice_b):
     """
@@ -114,10 +103,7 @@ def similaridade_overview(indice_a, indice_b):
     vetor_a = overview_tfidf[indice_a]
     vetor_b = overview_tfidf[indice_b]
 
-    return cosine_similarity(
-        vetor_a,
-        vetor_b
-    )[0][0]
+    return cosine_similarity(vetor_a, vetor_b)[0][0]
 
 
 # Calcula a similaridade entre dois valores numéricos
@@ -149,12 +135,7 @@ def similaridade_jaccard(generos_a, generos_b):
 
 
 # Calcula a similaridade entre dois filmes
-def similaridade_filmes(
-    filme_a,
-    filme_b,
-    indice_a,
-    indice_b
-):
+def similaridade_filmes(filme_a, filme_b, indice_a, indice_b):
 
     similaridades = []
     pesos = []
@@ -162,8 +143,6 @@ def similaridade_filmes(
     atributos = [
         ("Genre", similaridade_jaccard, 3),
         ("Director", similaridade_categorica, 2),
-        ("IMDB_norm", similaridade_numerica, 2),
-        ("Meta_norm", similaridade_numerica, 1),
         ("Year_norm", similaridade_numerica, 1),
         ("Runtime_norm", similaridade_numerica, 1),
         ("Certificate_norm", similaridade_numerica, 2),
@@ -174,20 +153,14 @@ def similaridade_filmes(
     # Compara os atributos tradicionais
     for atributo, funcao, peso in atributos:
 
-        sim = funcao(
-            filme_a[atributo],
-            filme_b[atributo]
-        )
+        sim = funcao(filme_a[atributo], filme_b[atributo])
 
         if sim is not None:
             similaridades.append(sim)
             pesos.append(peso)
 
     # Compara o conteúdo das sinopses
-    sim_overview = similaridade_overview(
-        indice_a,
-        indice_b
-    )
+    sim_overview = similaridade_overview(indice_a, indice_b)
 
     similaridades.append(sim_overview)
 
@@ -197,10 +170,8 @@ def similaridade_filmes(
     if not similaridades:
         return 0.0
 
-    return np.average(
-        similaridades,
-        weights=pesos
-    )
+    return np.average(similaridades, weights=pesos)
+
 
 # Encontra os filmes mais parecidos com o escolhido
 def encontrar_similares(titulo, quantidade=5):
@@ -214,9 +185,7 @@ def encontrar_similares(titulo, quantidade=5):
     filme_escolhido = filme_escolhido.iloc[0]
     resultados = []
 
-    indice_escolhido = df[
-        df["Series_Title"] == titulo
-    ].index[0]
+    indice_escolhido = df[df["Series_Title"] == titulo].index[0]
 
     # Compara o filme escolhido com todos os outros
     for indice, filme in df.iterrows():
@@ -225,10 +194,7 @@ def encontrar_similares(titulo, quantidade=5):
             continue
 
         similaridade = similaridade_filmes(
-            filme_escolhido,
-            filme,
-            indice_escolhido,
-            indice
+            filme_escolhido, filme, indice_escolhido, indice
         )
 
         resultados.append(
@@ -242,8 +208,6 @@ def encontrar_similares(titulo, quantidade=5):
                 "Overview": filme["Overview"],
                 "Released_Year": filme["Released_Year"],
                 "Runtime": filme["Runtime"],
-                "IMDB_Rating": filme["IMDB_Rating"],
-                "Meta_score": filme["Meta_score"],
                 "Poster_Link": filme["Poster_Link"],
                 "Similaridade": similaridade,
             }
@@ -251,23 +215,15 @@ def encontrar_similares(titulo, quantidade=5):
 
     # Organiza os filmes do mais parecido para o menos parecido
     resultados = pd.DataFrame(resultados)
-    resultados = resultados.sort_values(
-        by="Similaridade",
-        ascending=False
-    )
+    resultados = resultados.sort_values(by="Similaridade", ascending=False)
 
-    resultados = aplicar_experiencias_retentidas(
-        titulo,
-        resultados
-    )
+    resultados = aplicar_experiencias_retentidas(titulo, resultados)
 
     return resultados.head(quantidade)
 
+
 # Aplica as avaliações do usuário (caso exista)
-def aplicar_experiencias_retentidas(
-    titulo,
-    resultados
-):
+def aplicar_experiencias_retentidas(titulo, resultados):
     casos = carregar_casos_retidos()
 
     # Se não têm nenhuma avaliação sobre o filme naquele caso, mostra a similaridade original.
@@ -278,15 +234,12 @@ def aplicar_experiencias_retentidas(
     # Copia os resultados para não modificar nada no DataSet original.
     resultados = resultados.copy()
 
-
     # Ganha a similaridade original. Caso tenha alguma avaliação no caso
     # a similaridade do "Score_RBC" aumenta 2% (casos positivos) ou
     # diminuí 2% (casos negativos).
     resultados["Score_RBC"] = resultados["Similaridade"]
 
-    casos_filme = casos[
-        casos["Filme_Pesquisado"] == titulo
-    ]
+    casos_filme = casos[casos["Filme_Pesquisado"] == titulo]
 
     for _, caso in casos_filme.iterrows():
 
@@ -294,28 +247,17 @@ def aplicar_experiencias_retentidas(
 
         if caso["Avaliacao"] == "positiva":
 
-            resultados.loc[
-                resultados["Filme"] == filme,
-                "Score_RBC"
-            ] += 0.02
+            resultados.loc[resultados["Filme"] == filme, "Score_RBC"] += 0.02
 
         elif caso["Avaliacao"] == "negativa":
 
-            resultados.loc[
-                resultados["Filme"] == filme,
-                "Score_RBC"
-            ] -= 0.02
+            resultados.loc[resultados["Filme"] == filme, "Score_RBC"] -= 0.02
 
     # Mantém o Score_RBC entre 0 e 1
-    resultados["Score_RBC"] = (
-        resultados["Score_RBC"].clip(0, 1)
-    )
+    resultados["Score_RBC"] = resultados["Score_RBC"].clip(0, 1)
 
     # Ordena os valores
-    return resultados.sort_values(
-        by="Score_RBC",
-        ascending=False
-    )
+    return resultados.sort_values(by="Score_RBC", ascending=False)
 
 
 def reutilizar(resultados):
@@ -330,19 +272,19 @@ def reutilizar(resultados):
 
     return resultados.iloc[0]
 
+
 # Armazena a recomendação do usuário no arquivo "casos_rbc_csv".
-def reter_caso(
-    filme_pesquisado,
-    filme_recomendado,
-    similaridade,
-    avaliacao
-):
-    novo_caso = pd.DataFrame([{
-        "Filme_Pesquisado": filme_pesquisado,
-        "Filme_Recomendado": filme_recomendado,
-        "Similaridade": similaridade,
-        "Avaliacao": avaliacao
-    }])
+def reter_caso(filme_pesquisado, filme_recomendado, similaridade, avaliacao):
+    novo_caso = pd.DataFrame(
+        [
+            {
+                "Filme_Pesquisado": filme_pesquisado,
+                "Filme_Recomendado": filme_recomendado,
+                "Similaridade": similaridade,
+                "Avaliacao": avaliacao,
+            }
+        ]
+    )
 
     arquivo = "casos_rbc.csv"
 
@@ -351,10 +293,7 @@ def reter_caso(
         casos = pd.read_csv(arquivo)
 
         # Adiciona um novo caso ao existentes.
-        casos = pd.concat(
-            [casos, novo_caso],
-            ignore_index=True
-        )
+        casos = pd.concat([casos, novo_caso], ignore_index=True)
     except FileNotFoundError:
         casos = novo_caso
 
@@ -362,6 +301,7 @@ def reter_caso(
     casos.to_csv(arquivo, index=False)
 
     return True
+
 
 # Trata o erro caso o arquivo exista mas esta vazio.
 from pandas.errors import EmptyDataError
@@ -373,12 +313,7 @@ def carregar_casos_retidos():
     arquivo = "casos_rbc.csv"
 
     # Define as colunas esperadas.
-    colunas = [
-        "Filme_Pesquisado",
-        "Filme_Recomendado",
-        "Similaridade",
-        "Avaliacao"
-    ]
+    colunas = ["Filme_Pesquisado", "Filme_Recomendado", "Similaridade", "Avaliacao"]
 
     try:
 
@@ -394,4 +329,3 @@ def carregar_casos_retidos():
     except (FileNotFoundError, EmptyDataError):
 
         return pd.DataFrame(columns=colunas)
-
