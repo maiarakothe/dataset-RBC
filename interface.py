@@ -75,27 +75,18 @@ if not resultado.empty:
 
         if pd.notna(poster) and str(poster).strip():
 
-            st.image(poster, width=250)
+            st.image(poster, width=200)
 
     # Define a tabela com as informações do filme
     with col2:
-
         st.markdown(f"### {filme['Series_Title']}")
-
         st.write(f"🎭 **Gênero:** {filme['Genre']}")
-
         st.write(f"🎬 **Diretor:** {filme['Director']}")
-
         st.write(f"👤 **Ator 1:** {filme['Star1']}")
-
         st.write(f"👤 **Ator 2:** {filme['Star2']}")
-
         st.write(f"🔞 **Classificação:** {filme['Certificate']}")
-
         st.write(f"📅 **Ano:** " f"{int(filme['Released_Year'])}")
-
         st.write(f"⏱️ **Duração:** " f"{filme['Runtime']:.0f} min")
-
         st.write(f"📖 **Sinopse:** {filme['Overview']}")
 
     # 2. REUTILIZAÇÃO
@@ -198,39 +189,25 @@ if not resultado.empty:
             col_poster, col_info, col_score = st.columns([1, 4, 1])
 
             with col_poster:
-
                 poster = filme.get("Poster_Link", "")
-
                 if pd.notna(poster) and str(poster).strip():
-
                     st.image(poster, width=200)
 
             # Carrega informações dos filmes similares
             with col_info:
-
                 st.markdown(f"### #{posicao} — " f"{filme['Filme']}")
-
                 st.write(f"🎭 **Gênero:** " f"{filme['Genre']}")
-
                 st.write(f"🎬 **Diretor:** " f"{filme['Director']}")
-
                 st.write(f"👤 **Ator 1:** " f"{filme['Star1']}")
-
                 st.write(f"👤 **Ator 2:** " f"{filme['Star2']}")
-
                 st.write(f"🔞 **Classificação:** " f"{filme['Certificate']}")
-
                 st.write(f"📅 **Ano:** " f"{int(filme['Released_Year'])}")
-
                 st.write(f"⏱️ **Duração:** " f"{filme['Runtime']:.0f} min")
-
                 st.write(f"📖 **Sinopse:** {filme['Overview']}")
 
             # Exibe e Formata o percentual de similaridade dos filmes com o filme principal.
             with col_score:
-
                 st.metric("Similaridade", f"{percentual:.2f}%")
-
                 st.metric("Score RBC", f"{score_rbc:.2f}%")
 
 
