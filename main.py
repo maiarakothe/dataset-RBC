@@ -77,6 +77,8 @@ for coluna in colunas_texto:
     df[coluna] = df[coluna].fillna("").astype(str).str.strip()
 
 # Cria uma representação numérica dos textos dos filmes.
+# stop_words, básicamente tira palavras genéricas usadas para conectar textos
+# como "the", "o", "at", deixando somente as palavras chaves que usaremos na vetorização.
 vectorizer = TfidfVectorizer(stop_words="english")
 
 overview_tfidf = vectorizer.fit_transform(df["Overview"])
