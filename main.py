@@ -4,9 +4,9 @@ from pandas.errors import EmptyDataError
 import pandas as pd
 import numpy as np
 
+
 # Lê o DataSet
 df = pd.read_csv("imdb_top_1000.csv")
-
 
 # Melhora a resolução da imagem dos pôsters carregados
 def melhorar_poster(url):
@@ -18,7 +18,7 @@ def melhorar_poster(url):
         return url + "._V1_UX300_CR0,0,300,440_AL_.jpg"
     return url
 
-
+# Aplica a melhoria do poster
 df["Poster_Link"] = df["Poster_Link"].apply(melhorar_poster)
 
 # Converte o ano para número
@@ -92,6 +92,7 @@ def normalizar_01(serie):
 # Normaliza os atributos numéricos
 df["Year_norm"] = normalizar_01(df["Released_Year"])
 df["Runtime_norm"] = normalizar_01(df["Runtime"])
+
 
 
 def similaridade_overview(indice_a, indice_b):
@@ -222,44 +223,7 @@ def encontrar_similares(titulo, quantidade=5):
     return resultados.head(quantidade)
 
 
-# Aplica as avaliações do usuário (caso exista)
-def aplicar_experiencias_retentidas(titulo, resultados):
-    casos = carregar_casos_retidos()
-
-    # Se não têm nenhuma avaliação sobre o filme naquele caso, mostra a similaridade original.
-    if casos.empty:
-        resultados["Score_RBC"] = resultados["Similaridade"]
-        return resultados
-
-    # Copia os resultados para não modificar nada no DataSet original.
-    resultados = resultados.copy()
-
-    # Ganha a similaridade original. Caso tenha alguma avaliação no caso
-    # a similaridade do "Score_RBC" aumenta 2% (casos positivos) ou
-    # diminuí 2% (casos negativos).
-    resultados["Score_RBC"] = resultados["Similaridade"]
-
-    casos_filme = casos[casos["Filme_Pesquisado"] == titulo]
-
-    for _, caso in casos_filme.iterrows():
-
-        filme = caso["Filme_Recomendado"]
-
-        if caso["Avaliacao"] == "positiva":
-
-            resultados.loc[resultados["Filme"] == filme, "Score_RBC"] += 0.02
-
-        elif caso["Avaliacao"] == "negativa":
-
-            resultados.loc[resultados["Filme"] == filme, "Score_RBC"] -= 0.02
-
-    # Mantém o Score_RBC entre 0 e 1
-    resultados["Score_RBC"] = resultados["Score_RBC"].clip(0, 1)
-
-    # Ordena os valores
-    return resultados.sort_values(by="Score_RBC", ascending=False)
-
-
+# 2 R - Reutilização
 def reutilizar(resultados):
     """
     REUTILIZAÇÃO:
@@ -329,3 +293,41 @@ def carregar_casos_retidos():
     except (FileNotFoundError, EmptyDataError):
 
         return pd.DataFrame(columns=colunas)
+
+
+# Aplica as avaliações do usuário (caso exista)
+def aplicar_experiencias_retentidas(titulo, resultados):
+    casos = carregar_casos_retidos()
+
+    # Se não têm nenhuma avaliação sobre o filme naquele caso, mostra a similaridade original.
+    if casos.empty:
+        resultados["Score_RBC"] = resultados["Similaridade"]
+        return resultados
+
+    # Copia os resultados para não modificar nada no DataSet original.
+    resultados = resultados.copy()
+
+    # Ganha a similaridade original. Caso tenha alguma avaliação no caso
+    # a similaridade do "Score_RBC" aumenta 2% (casos positivos) ou
+    # diminuí 2% (casos negativos).
+    resultados["Score_RBC"] = resultados["Similaridade"]
+
+    casos_filme = casos[casos["Filme_Pesquisado"] == titulo]
+
+    for _, caso in casos_filme.iterrows():
+
+        filme = caso["Filme_Recomendado"]
+
+        if caso["Avaliacao"] == "positiva":
+
+            resultados.loc[resultados["Filme"] == filme, "Score_RBC"] += 0.02
+
+        elif caso["Avaliacao"] == "negativa":
+
+            resultados.loc[resultados["Filme"] == filme, "Score_RBC"] -= 0.02
+
+    # Mantém o Score_RBC entre 0 e 1
+    resultados["Score_RBC"] = resultados["Score_RBC"].clip(0, 1)
+
+    # Ordena os valores
+    return resultados.sort_values(by="Score_RBC", ascending=False)
