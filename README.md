@@ -2,89 +2,113 @@
 
 ## Sobre o projeto
 
-Este projeto implementa um sistema de **Raciocínio Baseado em Casos (RBC)** para encontrar filmes parecidos com um filme escolhido.
+Este projeto implementa um sistema de **Raciocínio Baseado em Casos (RBC)** para encontrar filmes parecidos com um filme escolhido pelo usuário.
 
-O sistema utiliza o dataset `imdb_top_1000.csv`. O filme escolhido é comparado com os outros filmes do dataset e cada comparação gera uma porcentagem de similaridade. No final, são mostrados os 5 filmes mais similares.
+O sistema utiliza o dataset `imdb_top_1000.csv`. O filme escolhido é comparado com os outros filmes do dataset e cada comparação gera uma porcentagem de similaridade.
+
+O projeto também implementa o ciclo completo dos **4 Rs do RBC**:
+
+- **Recuperar:** encontra os filmes mais semelhantes.
+- **Reutilizar:** utiliza o filme mais semelhante como recomendação.
+- **Revisar:** permite que o usuário avalie a recomendação.
+- **Reter:** armazena a avaliação para influenciar recomendações futuras.
+
+A interface foi desenvolvida utilizando **Streamlit**.
 
 ## Como funciona
 
 Primeiro, os dados são carregados e tratados. O ano e a duração são convertidos para números e os valores numéricos são normalizados entre 0 e 1.
 
-Depois, o filme escolhido é comparado com todos os outros filmes utilizando diferentes atributos. Cada atributo possui um peso de acordo com sua importância para a comparação.
+A classificação indicativa também é convertida para uma idade aproximada e normalizada.
+
+As sinopses dos filmes são transformadas utilizando **TF-IDF** e comparadas através da **similaridade do cosseno**.
+
+Depois, o filme escolhido é comparado com todos os outros filmes utilizando diferentes atributos. Cada atributo possui um peso de acordo com sua importância.
 
 A similaridade final é calculada através de uma **média ponderada**.
 
 ## Dados utilizados
 
-Foram escolhidos os seguintes atributos:
-
-| Atributo      | Tipo       | Método                | Peso |
-| ------------- | ---------- | --------------------- | ---: |
-| Genre         | Categórico | Jaccard               |    3 |
-| Director      | Categórico | Igualdade             |    2 |
-| IMDb Rating   | Numérico   | Similaridade numérica |    2 |
-| Meta Score    | Numérico   | Similaridade numérica |    1 |
-| Released Year | Numérico   | Similaridade numérica |    1 |
-| Runtime       | Numérico   | Similaridade numérica |    1 |
-| Star1         | Categórico | Igualdade             |    2 |
-| Star2         | Categórico | Igualdade             |    1 |
+| Atributo | Método | Peso |
+|---|---|---:|
+| Genre | Jaccard | 3 |
+| Director | Igualdade | 2 |
+| Released Year | Similaridade numérica | 1 |
+| Runtime | Similaridade numérica | 1 |
+| Certificate | Similaridade numérica | 2 |
+| Star1 | Igualdade | 2 |
+| Star2 | Igualdade | 1 |
+| Overview | TF-IDF + cosseno | 3 |
 
 ### Gênero
 
-O gênero recebeu peso **3** porque é um dos principais fatores usados para identificar filmes semelhantes.
+O gênero recebeu peso **3** e é comparado utilizando o **índice de Jaccard**, pois um filme pode possuir mais de um gênero.
 
 ### Diretor
 
-O diretor recebeu peso **2**. Se os dois filmes possuem o mesmo diretor, a similaridade desse atributo é 1. Caso contrário, é 0.
+O diretor recebeu peso **2**. Se os dois filmes possuem o mesmo diretor, a similaridade é 1; caso contrário, é 0.
 
-### IMDb
+### Ano e duração
 
-A nota do IMDb recebeu peso **2**. Como é um valor numérico, os valores são normalizados e comparados pela distância entre eles.
+`Released_Year` e `Runtime` recebem peso **1** cada.
 
-### Meta Score
+Os valores são normalizados entre 0 e 1. Quanto mais próximos forem os valores, maior será a similaridade.
 
-O Meta Score recebeu peso **1** e também utiliza a comparação numérica normalizada.
+### Classificação
 
-### Ano
-
-O ano de lançamento recebeu peso **1**. Filmes com anos próximos possuem maior similaridade nesse atributo.
-
-### Duração
-
-A duração recebeu peso **1**. Filmes com duração próxima possuem maior similaridade.
+`Certificate` recebe peso **2**. As classificações indicativas são convertidas para uma idade aproximada e depois normalizadas.
 
 ### Atores
 
-`Star1` recebeu peso **2** e `Star2` recebeu peso **1**.
+`Star1` recebe peso **2** e `Star2` recebe peso **1**.
 
 A comparação verifica se o ator é o mesmo nos dois filmes.
 
+### Sinopse
+
+`Overview` recebe peso **3**.
+
+As sinopses são transformadas em vetores utilizando **TF-IDF** e comparadas através da **similaridade do cosseno**.
 
 ## Dados que não foram utilizados
 
-O dataset possui outras informações que não foram utilizadas no cálculo da similaridade.
+Algumas informações do dataset não participam diretamente do cálculo da similaridade:
 
-Entre elas estão:
+- `Series_Title` – utilizado apenas para identificar o filme;
+- `Poster_Link` – utilizado somente para exibir o pôster na interface;
+- `Gross`;
+- `No_of_Votes`;
+- `Star3`;
+- `Star4`;
+- `IMDb_Rating`;
+- `Meta_Score`;
 
-* `Poster_Link`
-* `Series_Title`
-* `Overview`
-* `Certificate`
-* `Gross`
-* `No_of_Votes`
-* `Star3`
-* `Star4`
+## Experiências Retidas
 
+As avaliações realizadas pelo usuário são armazenadas no arquivo:
 
-`Series_Title` é utilizado apenas para identificar o filme, mas não participa do cálculo.
+```text
+casos_rbc.csv
+```
 
-`Poster_Link` não foi utilizado porque a imagem do filme não ajuda diretamente no cálculo da similaridade.
+Quando uma recomendação possui uma avaliação anterior:
+* **Avaliação positiva:** aumenta o `Score_RBC` em **2%**.
+* **Avaliação negativa:** reduz o `Score_RBC` em **2%**.
 
-`Overview` também não foi utilizado porque seria necessário aplicar técnicas de processamento de texto para comparar as descrições.
+Assim, experiências anteriores podem influenciar a ordem das recomendações futuras.
 
-`Certificate` não foi utilizado porque a classificação indicativa não foi considerada relevante para definir se dois filmes são parecidos.
+---
 
-`Gross` e `No_of_Votes` também ficaram de fora porque representam principalmente informações comerciais e de popularidade, e não características do conteúdo do filme.
+## Instalação e Execução
 
-Para rodar:
-`streamlit run interface.py`
+Para instalar as bibliotecas necessárias, execute:
+
+```bash
+pip install -r requirements.txt
+```
+
+Para executar o sistema:
+
+```bash
+streamlit run interface.py
+```
